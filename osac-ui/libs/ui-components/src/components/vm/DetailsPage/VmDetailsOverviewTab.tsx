@@ -1,4 +1,5 @@
-import { Card, CardBody, CardTitle, Grid, GridItem } from '@patternfly/react-core';
+import { useEffect } from 'react';
+import { Card, CardBody, CardTitle, Grid, GridItem, Stack, StackItem } from '@patternfly/react-core';
 
 import type { ComputeInstance } from '@osac/types';
 
@@ -7,6 +8,12 @@ import VmStorageCard from './VmStorageCard';
 import VmUserDataCard from './VmUserDataCard';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { ResourceConditionsTable } from '../../Resource/ResourceConditionsTable';
+import RestartRequiredBanner, { hasRestartRequiredCondition } from '../RestartRequiredBanner';
+import {
+  disarmRestartRequiredWatch,
+  useRestartRequiredArmed,
+  useRestartRequiredWatch,
+} from '../useRestartRequiredWatch';
 
 interface Props {
   vm: ComputeInstance;
@@ -15,8 +22,28 @@ interface Props {
 const VmDetailsOverviewTab = ({ vm }: Props) => {
   const { t } = useTranslation();
   const conditions = vm.status?.conditions ?? [];
+  const restartRequired = hasRestartRequiredCondition(vm);
+  const watchArmed = useRestartRequiredArmed(vm.id);
+
+  useRestartRequiredWatch({
+    vmId: vm.id,
+    enabled: watchArmed && !restartRequired,
+  });
+
+  useEffect(() => {
+    if (restartRequired) {
+      disarmRestartRequiredWatch(vm.id);
+    }
+  }, [restartRequired, vm.id]);
 
   return (
+    <Stack hasGutter>
+      {restartRequired ? (
+        <StackItem>
+          <RestartRequiredBanner vm={vm} />
+        </StackItem>
+      ) : null}
+      <StackItem>
     <Grid hasGutter>
       <GridItem md={6}>
         <VmDetailsCard vm={vm} />
@@ -40,6 +67,8 @@ const VmDetailsOverviewTab = ({ vm }: Props) => {
         <VmUserDataCard vm={vm} />
       </GridItem>
     </Grid>
+      </StackItem>
+    </Stack>
   );
 };
 
