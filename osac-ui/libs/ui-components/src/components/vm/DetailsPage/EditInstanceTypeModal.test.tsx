@@ -84,12 +84,30 @@ const renderWrapper = ({
     });
   });
 
-  return renderWithProviders(<EditInstanceTypeModal vm={instance} onClose={vi.fn()} />, {
+  const onClose = vi.fn();
+  const view = renderWithProviders(<EditInstanceTypeModal vm={instance} onClose={onClose} />, {
     transport,
   });
+  return { ...view, onClose, getCalls: () => getCalls };
 };
 
 describe('EditInstanceTypeModal wrapper', () => {
+  it('disables Save while the current type is loading', () => {
+    renderWrapper({ getMode: 'loading' });
+
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('retries when the current type failed to load', async () => {
+    const { user, getCalls } = renderWrapper({ getMode: 'error' });
+
+    expect(await screen.findByText('Could not load the current instance type')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    const callsBeforeRetry = getCalls();
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(getCalls()).toBeGreaterThan(callsBeforeRetry));
+  });
+
   it('offers only GPU types when the current type has a GPU', async () => {
     const { user } = renderWrapper({
       instance: vm(ComputeInstanceState.RUNNING, 'gpu-1'),
@@ -141,7 +159,7 @@ describe('EditInstanceTypeModal wrapper', () => {
           object?: { spec?: { instanceType?: { id?: string } } };
         }
       | undefined;
-    const { user } = renderWrapper({
+    const { user, onClose } = renderWrapper({
       onUpdate: (value) => {
         request = value as typeof request;
       },
@@ -149,9 +167,11 @@ describe('EditInstanceTypeModal wrapper', () => {
 
     await user.click(await screen.findByRole('combobox'));
     await user.click(await screen.findByRole('option', { name: /CPU large/ }));
+    expect(screen.queryByText('Resize will apply on next start.')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(request?.updateMask?.paths).toEqual(['spec.instance_type']));
     expect(request?.object?.spec?.instanceType?.id).toBe('cpu-2');
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 });

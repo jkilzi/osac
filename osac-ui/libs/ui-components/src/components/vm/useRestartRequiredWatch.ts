@@ -1,60 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { apiQueryKey } from '../../api/types';
 import { useApiQueryClient } from '../../api/use-api-query';
 
-const listeners = new Set<() => void>();
-const armedIds = new Set<string>();
-
-const notify = () => {
-  listeners.forEach((listener) => listener());
-};
-
-export const armRestartRequiredWatch = (vmId: string) => {
-  if (!vmId) {
-    return;
-  }
-  armedIds.add(vmId);
-  notify();
-};
-
-export const disarmRestartRequiredWatch = (vmId: string) => {
-  if (!armedIds.delete(vmId)) {
-    return;
-  }
-  notify();
-};
-
-export const useRestartRequiredArmed = (vmId: string): boolean => {
-  const [armed, setArmed] = useState(() => armedIds.has(vmId));
-
-  useEffect(() => {
-    const sync = () => setArmed(armedIds.has(vmId));
-    listeners.add(sync);
-    sync();
-    return () => {
-      listeners.delete(sync);
-    };
-  }, [vmId]);
-
-  return armed;
-};
-
-export const RESTART_REQUIRED_WATCH_INTERVAL_MS = 2000;
-export const RESTART_REQUIRED_WATCH_MAX_TICKS = 8;
+const RESTART_REQUIRED_WATCH_INTERVAL_MS = 2000;
+const RESTART_REQUIRED_WATCH_MAX_TICKS = 8;
 
 export const useRestartRequiredWatch = ({
   vmId,
   enabled,
-  intervalMs = RESTART_REQUIRED_WATCH_INTERVAL_MS,
-  maxTicks = RESTART_REQUIRED_WATCH_MAX_TICKS,
+  onFinished,
 }: {
   vmId: string;
   enabled: boolean;
-  intervalMs?: number;
-  maxTicks?: number;
+  onFinished: () => void;
 }) => {
   const queryClient = useApiQueryClient();
+  const queryClientRef = useRef(queryClient);
+  const onFinishedRef = useRef(onFinished);
+  queryClientRef.current = queryClient;
+  onFinishedRef.current = onFinished;
 
   useEffect(() => {
     if (!enabled || !vmId) {
@@ -62,18 +27,19 @@ export const useRestartRequiredWatch = ({
     }
 
     let ticks = 0;
+    let timer = 0;
     const tick = () => {
       ticks += 1;
-      void queryClient.invalidateQueries({
+      void queryClientRef.current.invalidateQueries({
         queryKey: apiQueryKey('v1/compute_instances', [vmId]),
       });
-      if (ticks >= maxTicks) {
+      if (ticks >= RESTART_REQUIRED_WATCH_MAX_TICKS) {
         window.clearInterval(timer);
-        disarmRestartRequiredWatch(vmId);
+        onFinishedRef.current();
       }
     };
 
-    const timer = window.setInterval(tick, intervalMs);
+    timer = window.setInterval(tick, RESTART_REQUIRED_WATCH_INTERVAL_MS);
     return () => window.clearInterval(timer);
-  }, [enabled, intervalMs, maxTicks, queryClient, vmId]);
+  }, [enabled, vmId]);
 };
