@@ -13,7 +13,8 @@ interface EditInstanceTypeModalProps {
   onClose: () => void;
 }
 
-const hasGpu = (item: { spec?: { gpu?: unknown } } | undefined): boolean => Boolean(item?.spec?.gpu);
+const hasGpu = (item: { spec?: { gpu?: unknown } } | undefined): boolean =>
+  Boolean(item?.spec?.gpu);
 
 const EditInstanceTypeModal = ({ vm, onClose }: EditInstanceTypeModalProps) => {
   const { t } = useTranslation();
@@ -50,11 +51,7 @@ const EditInstanceTypeModal = ({ vm, onClose }: EditInstanceTypeModalProps) => {
           : undefined
       }
       currentTypeStatus={currentTypeStatus}
-      alert={
-        stopped
-          ? { variant: 'info', text: t('Resize will apply on next start.') }
-          : undefined
-      }
+      alert={stopped ? { variant: 'info', text: t('Resize will apply on next start.') } : undefined}
       isLoading={isLoading}
       onRetryCurrentType={() => {
         void refetch();

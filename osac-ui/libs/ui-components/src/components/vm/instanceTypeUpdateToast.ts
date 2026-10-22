@@ -19,4 +19,7 @@ export const instanceTypeUpdateSuccessTitle = (
     : t('Instance type change submitted for {{label}}.', { label });
 
 export const instanceTypeUpdateWarningsDescription = (warnings: string[] | undefined): string =>
-  (warnings ?? []).map((warning) => warning.trim()).filter(Boolean).join(' ');
+  (warnings ?? [])
+    .map((warning) => warning.trim())
+    .filter(Boolean)
+    .join(' ');

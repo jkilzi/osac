@@ -20,9 +20,7 @@ const other = {
   spec: { state: InstanceTypeState.ACTIVE, vcpus: 8, memoryGib: 16 },
 } as InstanceType;
 
-const renderModal = (
-  props: Partial<ComponentProps<typeof EditInstanceTypeFormModal>> = {},
-) =>
+const renderModal = (props: Partial<ComponentProps<typeof EditInstanceTypeFormModal>> = {}) =>
   renderWithProviders(
     <EditInstanceTypeFormModal
       title="Edit instance type"
@@ -97,7 +95,9 @@ describe('EditInstanceTypeFormModal', () => {
   });
 
   it('keeps the modal open and shows a danger alert when save fails', async () => {
-    const onSave = vi.fn().mockRejectedValue(new ConnectError('cannot change GPU', Code.FailedPrecondition));
+    const onSave = vi
+      .fn()
+      .mockRejectedValue(new ConnectError('cannot change GPU', Code.FailedPrecondition));
     const onClose = vi.fn();
     const { user } = renderModal({ onSave, onClose });
 

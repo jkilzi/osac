@@ -1,5 +1,13 @@
 import { useEffect } from 'react';
-import { Card, CardBody, CardTitle, Grid, GridItem, Stack, StackItem } from '@patternfly/react-core';
+import {
+  Card,
+  CardBody,
+  CardTitle,
+  Grid,
+  GridItem,
+  Stack,
+  StackItem,
+} from '@patternfly/react-core';
 
 import type { ComputeInstance } from '@osac/types';
 
@@ -44,29 +52,29 @@ const VmDetailsOverviewTab = ({ vm }: Props) => {
         </StackItem>
       ) : null}
       <StackItem>
-    <Grid hasGutter>
-      <GridItem md={6}>
-        <VmDetailsCard vm={vm} />
-      </GridItem>
-      <GridItem md={6}>
-        <Card isFullHeight>
-          <CardTitle>{t('Conditions')}</CardTitle>
-          <CardBody>
-            <ResourceConditionsTable
-              ariaLabel={t('Virtual machine conditions')}
-              conditions={conditions}
-              conditionResourceKind="compute_instance"
-            />
-          </CardBody>
-        </Card>
-      </GridItem>
-      <GridItem span={12}>
-        <VmStorageCard vm={vm} />
-      </GridItem>
-      <GridItem span={12}>
-        <VmUserDataCard vm={vm} />
-      </GridItem>
-    </Grid>
+        <Grid hasGutter>
+          <GridItem md={6}>
+            <VmDetailsCard vm={vm} />
+          </GridItem>
+          <GridItem md={6}>
+            <Card isFullHeight>
+              <CardTitle>{t('Conditions')}</CardTitle>
+              <CardBody>
+                <ResourceConditionsTable
+                  ariaLabel={t('Virtual machine conditions')}
+                  conditions={conditions}
+                  conditionResourceKind="compute_instance"
+                />
+              </CardBody>
+            </Card>
+          </GridItem>
+          <GridItem span={12}>
+            <VmStorageCard vm={vm} />
+          </GridItem>
+          <GridItem span={12}>
+            <VmUserDataCard vm={vm} />
+          </GridItem>
+        </Grid>
       </StackItem>
     </Stack>
   );

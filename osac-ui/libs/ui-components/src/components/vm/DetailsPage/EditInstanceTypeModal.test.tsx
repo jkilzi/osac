@@ -135,7 +135,12 @@ describe('EditInstanceTypeModal wrapper', () => {
   });
 
   it('updates with the explicit instance type mask', async () => {
-    let request: { updateMask?: { paths?: string[] }; object?: { spec?: { instanceType?: { id?: string } } } } | undefined;
+    let request:
+      | {
+          updateMask?: { paths?: string[] };
+          object?: { spec?: { instanceType?: { id?: string } } };
+        }
+      | undefined;
     const { user } = renderWrapper({
       onUpdate: (value) => {
         request = value as typeof request;
