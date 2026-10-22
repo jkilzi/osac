@@ -48,20 +48,27 @@ const vm = (state: ComputeInstanceState, instanceTypeId: string): ComputeInstanc
 const renderWrapper = ({
   instance = vm(ComputeInstanceState.RUNNING, 'cpu-1'),
   types = [cpu, cpuLarge, gpu],
+  currentType,
   getMode = 'ready' as 'ready' | 'loading' | 'error',
   onUpdate,
+  onList,
   rejectUpdate = false,
 }: {
   instance?: ComputeInstance;
   types?: InstanceType[];
+  currentType?: InstanceType;
   getMode?: 'ready' | 'loading' | 'error';
   onUpdate?: (request: unknown) => void;
+  onList?: (request: { filter?: string }) => void;
   rejectUpdate?: boolean;
 } = {}) => {
   let getCalls = 0;
   const transport = createRouterTransport((router) => {
     router.service(InstanceTypes, {
-      list: () => ({ items: types }),
+      list: (request) => {
+        onList?.(request);
+        return { items: types };
+      },
       get: () => {
         getCalls += 1;
         if (getMode === 'error') {
@@ -70,7 +77,9 @@ const renderWrapper = ({
         if (getMode === 'loading' && getCalls === 1) {
           return new Promise(() => undefined);
         }
-        return { object: types.find((item) => item.id === instance.spec?.instanceType?.id) };
+        return {
+          object: currentType ?? types.find((item) => item.id === instance.spec?.instanceType?.id),
+        };
       },
     });
     router.service(ComputeInstances, {
@@ -96,6 +105,43 @@ describe('EditInstanceTypeModal wrapper', () => {
     renderWrapper({ getMode: 'loading' });
 
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('keeps Save disabled until the selection changes', async () => {
+    const { user } = renderWrapper();
+
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).not.toBeDisabled();
+    });
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+    await user.click(screen.getByRole('combobox'));
+    await user.click(await screen.findByRole('option', { name: /CPU large/ }));
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+  });
+
+  it('includes the current type id when that type is deprecated', async () => {
+    const deprecated = {
+      ...cpu,
+      id: 'cpu-old',
+      metadata: { name: 'CPU old' },
+      spec: { ...cpu.spec, state: InstanceTypeState.DEPRECATED },
+    } as InstanceType;
+    let listFilter: string | undefined;
+
+    renderWrapper({
+      instance: vm(ComputeInstanceState.RUNNING, 'cpu-old'),
+      types: [deprecated, cpuLarge],
+      currentType: deprecated,
+      onList: (request) => {
+        listFilter = request.filter;
+      },
+    });
+
+    await waitFor(() => {
+      expect(listFilter).toContain(`this.spec.state == ${InstanceTypeState.ACTIVE}`);
+    });
+    expect(listFilter).toContain('this.id == "cpu-old"');
   });
 
   it('retries when the current type failed to load', async () => {

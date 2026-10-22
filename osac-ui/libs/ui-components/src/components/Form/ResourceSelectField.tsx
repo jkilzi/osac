@@ -177,7 +177,7 @@ export const ResourceSelectField = ({
       <FormGroup label={label} fieldId={fieldId} isRequired={isRequired} labelInfo={labelInfo}>
         {isTypeahead ? (
           <TypeaheadSelect
-            id={fieldId}
+            id={`${fieldId}-select`}
             initialOptions={typeaheadOptions}
             isDisabled={controlDisabled}
             placeholder={effectivePlaceholder}

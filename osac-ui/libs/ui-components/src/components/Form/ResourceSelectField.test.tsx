@@ -236,6 +236,22 @@ describe('ResourceSelectField', () => {
     expect(screen.getByLabelText(/^Tenant/)).toHaveTextContent('globex (custom)');
   });
 
+  it('keeps distinct ids for the typeahead select and toggle', async () => {
+    const { user } = renderSelect({
+      tenants: [makeTenant('t-1', 'acme'), makeTenant('t-2', 'globex')],
+      isTypeahead: true,
+    });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/^Tenant/)).not.toBeDisabled();
+    });
+
+    expect(document.querySelectorAll('#tenant')).toHaveLength(1);
+    await user.click(screen.getByLabelText(/^Tenant/));
+    expect(document.getElementById('tenant-select')).not.toBeNull();
+    expect(document.getElementById('tenant')).not.toBe(document.getElementById('tenant-select'));
+  });
+
   it('filters options by typeahead input when isTypeahead is true', async () => {
     const { user } = renderSelect({
       tenants: [makeTenant('t-1', 'acme'), makeTenant('t-2', 'globex')],
