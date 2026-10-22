@@ -71,7 +71,11 @@ describe('useUpdateVmInstanceType', () => {
   it('sends an explicit spec.instance_type mask', async () => {
     const { result } = renderHookWith(() => ({ warnings: [] }));
 
-    await result.current.updateInstanceType(vm(ComputeInstanceState.RUNNING), 'standard-8-16', 'Large');
+    await result.current.updateInstanceType(
+      vm(ComputeInstanceState.RUNNING),
+      'standard-8-16',
+      'Large',
+    );
 
     expect(lastUpdate?.object?.id).toBe('vm-1');
     expect(lastUpdate?.object?.spec?.instanceType?.id).toBe('standard-8-16');
@@ -81,7 +85,11 @@ describe('useUpdateVmInstanceType', () => {
   it('toasts submitted copy for a running VM', async () => {
     const { result } = renderHookWith(() => ({ warnings: [] }));
 
-    await result.current.updateInstanceType(vm(ComputeInstanceState.RUNNING), 'standard-8-16', 'Large');
+    await result.current.updateInstanceType(
+      vm(ComputeInstanceState.RUNNING),
+      'standard-8-16',
+      'Large',
+    );
 
     await waitFor(() => expect(mockAddToast).toHaveBeenCalled());
     expect(mockAddToast).toHaveBeenCalledWith(
@@ -95,7 +103,11 @@ describe('useUpdateVmInstanceType', () => {
   it('adds next-start copy when the VM is stopped', async () => {
     const { result } = renderHookWith(() => ({ warnings: [] }));
 
-    await result.current.updateInstanceType(vm(ComputeInstanceState.STOPPED), 'standard-8-16', 'Large');
+    await result.current.updateInstanceType(
+      vm(ComputeInstanceState.STOPPED),
+      'standard-8-16',
+      'Large',
+    );
 
     expect(mockAddToast).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -107,7 +119,11 @@ describe('useUpdateVmInstanceType', () => {
   it('includes response warnings in the toast description', async () => {
     const { result } = renderHookWith(() => ({ warnings: ['type is deprecated'] }));
 
-    await result.current.updateInstanceType(vm(ComputeInstanceState.PAUSED), 'standard-8-16', 'Large');
+    await result.current.updateInstanceType(
+      vm(ComputeInstanceState.PAUSED),
+      'standard-8-16',
+      'Large',
+    );
 
     expect(mockAddToast).toHaveBeenCalledWith(
       expect.objectContaining({ description: 'type is deprecated' }),

@@ -1,6 +1,11 @@
 import { type ComputeInstance, ComputeInstances } from '@osac/types';
 
-import { INSTANCE_TYPE_UPDATE_MASK, instanceTypeUpdateSuccessTitle, instanceTypeUpdateWarningsDescription, isStoppedVm } from './instanceTypeUpdateToast';
+import {
+  INSTANCE_TYPE_UPDATE_MASK,
+  instanceTypeUpdateSuccessTitle,
+  instanceTypeUpdateWarningsDescription,
+  isStoppedVm,
+} from './instanceTypeUpdateToast';
 import { armRestartRequiredWatch } from './useRestartRequiredWatch';
 import { useApiQueryClient } from '../../api/use-api-query';
 import { useUpdateResource } from '../../api/use-resource';

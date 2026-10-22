@@ -38,7 +38,9 @@ const canEditInstanceType = (vm: ComputeInstance): boolean => {
 const disabledInstanceTypeTooltip = (vm: ComputeInstance, t: TFunction): string =>
   vm.status?.state === ComputeInstanceState.DELETING
     ? t('This virtual machine is being deleted.')
-    : t('The instance type can be changed when the virtual machine is running, paused, or stopped.');
+    : t(
+        'The instance type can be changed when the virtual machine is running, paused, or stopped.',
+      );
 
 const VmDetailsCard = ({ vm }: Props) => {
   const { t } = useTranslation();

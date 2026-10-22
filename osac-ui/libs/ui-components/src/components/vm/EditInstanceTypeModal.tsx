@@ -95,10 +95,7 @@ const EditInstanceTypeFormModal = ({
         const selectionDiffers =
           Boolean(values.instanceType.id) && values.instanceType.id !== initialInstanceType?.id;
         const saveDisabled =
-          isSubmitting ||
-          isLoading ||
-          currentTypeStatus !== 'ready' ||
-          !values.instanceType.id;
+          isSubmitting || isLoading || currentTypeStatus !== 'ready' || !values.instanceType.id;
 
         return (
           <Modal
