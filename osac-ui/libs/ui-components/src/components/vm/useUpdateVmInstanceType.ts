@@ -6,7 +6,6 @@ import {
   instanceTypeUpdateWarningsDescription,
   isStoppedVm,
 } from './instanceTypeUpdateToast';
-import { armRestartRequiredWatch } from './useRestartRequiredWatch';
 import { useApiQueryClient } from '../../api/use-api-query';
 import { useUpdateResource } from '../../api/use-resource';
 import { invalidateComputeInstancesQueries } from '../../api/v1/compute-instance';
@@ -37,7 +36,6 @@ export const useUpdateVmInstanceType = () => {
       title: instanceTypeUpdateSuccessTitle(t, instanceTypeLabel, isStoppedVm(vm)),
       description: instanceTypeUpdateWarningsDescription(response.warnings) || undefined,
     });
-    armRestartRequiredWatch(vm.id);
     await invalidateComputeInstancesQueries(queryClient);
   };
 

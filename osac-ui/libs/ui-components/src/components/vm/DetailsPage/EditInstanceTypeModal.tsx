@@ -1,22 +1,60 @@
-import type { ComputeInstance, InstanceType } from '@osac/types';
-import { ComputeInstanceState } from '@osac/types';
+import { useState } from 'react';
+import {
+  Alert,
+  Button,
+  Content,
+  Modal,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+} from '@patternfly/react-core';
+import { Formik } from 'formik';
+import type { TFunction } from 'i18next';
+import * as Yup from 'yup';
 
-import { useInstanceType } from '../../../api/v1/instance-types';
+import {
+  type ComputeInstance,
+  ComputeInstanceState,
+  type InstanceType,
+  InstanceTypes,
+} from '@osac/types';
+
+import { INSTANCE_TYPE_ACTIVE_LIST_FILTER, useInstanceType } from '../../../api/v1/instance-types';
 import { useTranslation } from '../../../hooks/useTranslation';
-import type { ResourceListItem } from '../../Form/ResourceSelectField';
-import EditInstanceTypeFormModal from '../EditInstanceTypeModal';
+import { getErrorMessage } from '../../../utils/error';
+import OsacForm from '../../Form/OsacForm';
+import {
+  type ResourceListItem,
+  ResourceSelectField,
+  type ResourceSelectValue,
+  emptyResourceSelectValue,
+} from '../../Form/ResourceSelectField';
 import { useUpdateVmInstanceType } from '../useUpdateVmInstanceType';
 import { formatInstanceTypeOptionLabel } from '../utils';
 
 interface EditInstanceTypeModalProps {
   vm: ComputeInstance;
   onClose: () => void;
+  onSaved?: () => void;
 }
+
+interface FormValues {
+  instanceType: ResourceSelectValue;
+}
+
+type CurrentTypeStatus = 'loading' | 'ready' | 'error';
 
 const hasGpu = (item: { spec?: { gpu?: unknown } } | undefined): boolean =>
   Boolean(item?.spec?.gpu);
 
-const EditInstanceTypeModal = ({ vm, onClose }: EditInstanceTypeModalProps) => {
+const validationSchema = (t: TFunction) =>
+  Yup.object({
+    instanceType: Yup.object({
+      id: Yup.string().required(t('An instance type is required')),
+    }),
+  });
+
+const EditInstanceTypeModal = ({ vm, onClose, onSaved }: EditInstanceTypeModalProps) => {
   const { t } = useTranslation();
   const { updateInstanceType } = useUpdateVmInstanceType();
   const {
@@ -25,42 +63,126 @@ const EditInstanceTypeModal = ({ vm, onClose }: EditInstanceTypeModalProps) => {
     isError,
     refetch,
   } = useInstanceType(vm.spec?.instanceType?.id);
+  const [submitError, setSubmitError] = useState<unknown>();
 
-  const currentTypeStatus = isLoading ? 'loading' : isError || !currentType ? 'error' : 'ready';
+  const currentTypeStatus: CurrentTypeStatus = isLoading
+    ? 'loading'
+    : isError || !currentType
+      ? 'error'
+      : 'ready';
   const stopped = vm.status?.state === ComputeInstanceState.STOPPED;
+  const initialInstanceType =
+    currentTypeStatus === 'ready' && currentType
+      ? {
+          id: currentType.id,
+          label: currentType.metadata?.name || currentType.id,
+        }
+      : undefined;
+  const initialValue = initialInstanceType
+    ? { id: initialInstanceType.id, name: initialInstanceType.label }
+    : emptyResourceSelectValue();
 
   return (
-    <EditInstanceTypeFormModal
-      title={t('Edit instance type')}
-      description={t('Select a new instance type for this virtual machine.')}
-      selectConfig={{
-        filterItems: (item: ResourceListItem) => {
-          if (currentTypeStatus !== 'ready' || !currentType) {
-            return true;
-          }
-          return hasGpu(item as InstanceType) === hasGpu(currentType);
-        },
-        formatOptionLabel: (item) => formatInstanceTypeOptionLabel(item as InstanceType),
+    <Formik<FormValues>
+      enableReinitialize
+      initialValues={{ instanceType: initialValue }}
+      validationSchema={validationSchema(t)}
+      onSubmit={async (values) => {
+        if (!values.instanceType.id || currentTypeStatus !== 'ready') {
+          return;
+        }
+        setSubmitError(undefined);
+        try {
+          await updateInstanceType(
+            vm,
+            values.instanceType.id,
+            values.instanceType.name || values.instanceType.id,
+          );
+          onSaved?.();
+          onClose();
+        } catch (error) {
+          setSubmitError(error);
+        }
       }}
-      initialInstanceType={
-        currentTypeStatus === 'ready' && currentType
-          ? {
-              id: currentType.id,
-              label: currentType.metadata?.name || currentType.id,
-            }
-          : undefined
-      }
-      currentTypeStatus={currentTypeStatus}
-      alert={stopped ? { variant: 'info', text: t('Resize will apply on next start.') } : undefined}
-      isLoading={isLoading}
-      onRetryCurrentType={() => {
-        void refetch();
+    >
+      {({ submitForm, isSubmitting, values }) => {
+        const selectionDiffers =
+          Boolean(values.instanceType.id) && values.instanceType.id !== initialInstanceType?.id;
+        const saveDisabled =
+          isSubmitting || currentTypeStatus !== 'ready' || !values.instanceType.id;
+
+        return (
+          <Modal
+            variant="small"
+            isOpen
+            onClose={isSubmitting ? undefined : onClose}
+            aria-labelledby="edit-instance-type-modal-title"
+          >
+            <ModalHeader title={t('Edit instance type')} labelId="edit-instance-type-modal-title" />
+            <ModalBody>
+              <Content component="p">
+                {t('Select a new instance type for this virtual machine.')}
+              </Content>
+              {currentTypeStatus === 'error' ? (
+                <Alert
+                  variant="danger"
+                  isInline
+                  title={t('Could not load the current instance type')}
+                  actionLinks={
+                    <Button variant="link" onClick={() => void refetch()}>
+                      {t('Retry')}
+                    </Button>
+                  }
+                />
+              ) : null}
+              <OsacForm>
+                <ResourceSelectField
+                  name="instanceType"
+                  label={t('Instance type')}
+                  fieldId="edit-instance-type"
+                  service={InstanceTypes}
+                  request={{ filter: INSTANCE_TYPE_ACTIVE_LIST_FILTER }}
+                  isRequired
+                  isTypeahead
+                  isDisabled={currentTypeStatus === 'error'}
+                  filterItems={(item: ResourceListItem) => {
+                    if (currentTypeStatus !== 'ready' || !currentType) {
+                      return true;
+                    }
+                    return hasGpu(item as InstanceType) === hasGpu(currentType);
+                  }}
+                  formatOptionLabel={(item) => formatInstanceTypeOptionLabel(item as InstanceType)}
+                  placeholder={t('Select an instance type')}
+                  loadErrorTitle={t('Error loading instance types')}
+                  emptyTitle={t('No instance types available')}
+                />
+              </OsacForm>
+              {stopped && selectionDiffers ? (
+                <Alert variant="info" isInline title={t('Resize will apply on next start.')} />
+              ) : null}
+              {submitError ? (
+                <Alert variant="danger" isInline title={t('Failed to update the instance type')}>
+                  {getErrorMessage(submitError)}
+                </Alert>
+              ) : null}
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="link" onClick={onClose} isDisabled={isSubmitting}>
+                {t('Cancel')}
+              </Button>
+              <Button
+                variant="primary"
+                onClick={submitForm}
+                isDisabled={saveDisabled}
+                isLoading={isSubmitting}
+              >
+                {t('Save')}
+              </Button>
+            </ModalFooter>
+          </Modal>
+        );
       }}
-      onSave={(instanceTypeId, instanceTypeLabel) =>
-        updateInstanceType(vm, instanceTypeId, instanceTypeLabel)
-      }
-      onClose={onClose}
-    />
+    </Formik>
   );
 };
 
