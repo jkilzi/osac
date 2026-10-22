@@ -16,10 +16,12 @@ import {
   type ComputeInstance,
   ComputeInstanceState,
   type InstanceType,
+  InstanceTypeState,
   InstanceTypes,
 } from '@osac/types';
 
-import { INSTANCE_TYPE_ACTIVE_LIST_FILTER, useInstanceType } from '../../../api/v1/instance-types';
+import { cel } from '../../../api/cel';
+import { useInstanceType } from '../../../api/v1/instance-types';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { getErrorMessage } from '../../../utils/error';
 import OsacForm from '../../Form/OsacForm';
@@ -81,6 +83,12 @@ const EditInstanceTypeModal = ({ vm, onClose, onSaved }: EditInstanceTypeModalPr
   const initialValue = initialInstanceType
     ? { id: initialInstanceType.id, name: initialInstanceType.label }
     : emptyResourceSelectValue();
+  const listFilter = cel<InstanceType>((filter) =>
+    filter.or(
+      filter.field('spec.state').equals(InstanceTypeState.ACTIVE),
+      currentType?.id ? filter.field('id').equals(currentType.id) : undefined,
+    ),
+  );
 
   return (
     <Formik<FormValues>
@@ -88,7 +96,11 @@ const EditInstanceTypeModal = ({ vm, onClose, onSaved }: EditInstanceTypeModalPr
       initialValues={{ instanceType: initialValue }}
       validationSchema={validationSchema(t)}
       onSubmit={async (values) => {
-        if (!values.instanceType.id || currentTypeStatus !== 'ready') {
+        if (
+          !values.instanceType.id ||
+          currentTypeStatus !== 'ready' ||
+          values.instanceType.id === initialInstanceType?.id
+        ) {
           return;
         }
         setSubmitError(undefined);
@@ -109,7 +121,10 @@ const EditInstanceTypeModal = ({ vm, onClose, onSaved }: EditInstanceTypeModalPr
         const selectionDiffers =
           Boolean(values.instanceType.id) && values.instanceType.id !== initialInstanceType?.id;
         const saveDisabled =
-          isSubmitting || currentTypeStatus !== 'ready' || !values.instanceType.id;
+          isSubmitting ||
+          currentTypeStatus !== 'ready' ||
+          !values.instanceType.id ||
+          !selectionDiffers;
 
         return (
           <Modal
@@ -141,7 +156,7 @@ const EditInstanceTypeModal = ({ vm, onClose, onSaved }: EditInstanceTypeModalPr
                   label={t('Instance type')}
                   fieldId="edit-instance-type"
                   service={InstanceTypes}
-                  request={{ filter: INSTANCE_TYPE_ACTIVE_LIST_FILTER }}
+                  request={{ filter: listFilter }}
                   isRequired
                   isTypeahead
                   isDisabled={currentTypeStatus === 'error'}
