@@ -38,28 +38,27 @@ const renderPage = () =>
 
 describe('VmDetailsPage', () => {
   beforeEach(async () => {
-    const actual = await vi.importActual<typeof import('../../api/use-resource')>(
-      '../../api/use-resource',
-    );
+    const actual =
+      await vi.importActual<typeof import('../../api/use-resource')>('../../api/use-resource');
     mocks.useGetResource.mockReset();
     mocks.useGetResource.mockImplementation(actual.useGetResource);
   });
 
   it('passes shared VM tab labels to the loading skeleton', async () => {
-    const actual = await vi.importActual<typeof import('../../api/use-resource')>(
-      '../../api/use-resource',
-    );
-    mocks.useGetResource.mockImplementation((service, request, options) => {
-      if (service.typeName === ComputeInstances.typeName) {
+    const actual =
+      await vi.importActual<typeof import('../../api/use-resource')>('../../api/use-resource');
+    mocks.useGetResource.mockImplementation((...args: Parameters<typeof actual.useGetResource>) => {
+      const [service] = args;
+      if (service === ComputeInstances) {
         return {
           data: undefined,
           isLoading: true,
           isError: false,
           error: null,
           refetch: vi.fn(),
-        } as ReturnType<typeof actual.useGetResource>;
+        } as unknown as ReturnType<typeof actual.useGetResource>;
       }
-      return actual.useGetResource(service, request, options);
+      return actual.useGetResource(...args);
     });
 
     renderPage();
