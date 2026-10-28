@@ -89,31 +89,33 @@ const EditInstanceTypeModal = ({ vm, onClose }: EditInstanceTypeModalProps) => {
     ),
   );
 
+  const handleSubmit = async (values: FormValues) => {
+    if (
+      !values.instanceType.id ||
+      currentTypeStatus !== 'ready' ||
+      values.instanceType.id === initialInstanceType?.id
+    ) {
+      return;
+    }
+    setSubmitError(undefined);
+    try {
+      await updateInstanceType(
+        vm,
+        values.instanceType.id,
+        values.instanceType.name || values.instanceType.id,
+      );
+      onClose();
+    } catch (error) {
+      setSubmitError(error);
+    }
+  };
+
   return (
     <Formik<FormValues>
       enableReinitialize
       initialValues={{ instanceType: initialValue }}
       validationSchema={validationSchema(t)}
-      onSubmit={async (values) => {
-        if (
-          !values.instanceType.id ||
-          currentTypeStatus !== 'ready' ||
-          values.instanceType.id === initialInstanceType?.id
-        ) {
-          return;
-        }
-        setSubmitError(undefined);
-        try {
-          await updateInstanceType(
-            vm,
-            values.instanceType.id,
-            values.instanceType.name || values.instanceType.id,
-          );
-          onClose();
-        } catch (error) {
-          setSubmitError(error);
-        }
-      }}
+      onSubmit={handleSubmit}
     >
       {({ submitForm, isSubmitting, values }) => {
         const selectionDiffers =
