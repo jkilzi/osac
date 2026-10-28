@@ -159,7 +159,7 @@ const EditInstanceTypeModal = ({ vm, onClose, onSaved }: EditInstanceTypeModalPr
                   request={{ filter: listFilter }}
                   isRequired
                   isTypeahead
-                  isDisabled={currentTypeStatus === 'error'}
+                  isDisabled={currentTypeStatus !== 'ready'}
                   filterItems={(item: ResourceListItem) => {
                     if (currentTypeStatus !== 'ready' || !currentType) {
                       return true;

@@ -18,8 +18,11 @@ export const useRestartRequiredWatch = ({
   const queryClient = useApiQueryClient();
   const queryClientRef = useRef(queryClient);
   const onFinishedRef = useRef(onFinished);
-  queryClientRef.current = queryClient;
-  onFinishedRef.current = onFinished;
+
+  useEffect(() => {
+    queryClientRef.current = queryClient;
+    onFinishedRef.current = onFinished;
+  });
 
   useEffect(() => {
     if (!enabled || !vmId) {

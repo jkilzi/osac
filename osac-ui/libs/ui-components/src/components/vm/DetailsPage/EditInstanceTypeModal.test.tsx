@@ -101,10 +101,14 @@ const renderWrapper = ({
 };
 
 describe('EditInstanceTypeModal wrapper', () => {
-  it('disables Save while the current type is loading', () => {
+  it('disables Save and the select while the current type is loading', async () => {
     renderWrapper({ getMode: 'loading' });
 
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    await waitFor(() => {
+      // Typeahead MenuToggle marks the outer toggle with pf-m-disabled (not a form control).
+      expect(document.getElementById('edit-instance-type')).toHaveClass('pf-m-disabled');
+    });
   });
 
   it('keeps Save disabled until the selection changes', async () => {
@@ -163,14 +167,6 @@ describe('EditInstanceTypeModal wrapper', () => {
     await user.click(await screen.findByRole('combobox'));
     expect(await screen.findByRole('option', { name: /GPU small/ })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /CPU small/ })).not.toBeInTheDocument();
-  });
-
-  it('does not force a non-GPU filter while the current type is still loading', async () => {
-    const { user } = renderWrapper({ getMode: 'loading', types: [cpu, gpu] });
-
-    await user.click(await screen.findByRole('combobox'));
-    expect(await screen.findByRole('option', { name: /CPU small/ })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /GPU small/ })).toBeInTheDocument();
   });
 
   it('passes the next-start alert for a stopped VM after the selection changes', async () => {
