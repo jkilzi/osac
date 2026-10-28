@@ -105,10 +105,15 @@ describe('EditInstanceTypeModal wrapper', () => {
     renderWrapper({ getMode: 'loading' });
 
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    // Wait until the option list finishes loading so pf-m-disabled is only from
+    // the current-type guard, not ResourceSelectField's own list-loading disable.
     await waitFor(() => {
-      // Typeahead MenuToggle marks the outer toggle with pf-m-disabled (not a form control).
-      expect(document.getElementById('edit-instance-type')).toHaveClass('pf-m-disabled');
+      expect(screen.getByRole('combobox')).toHaveAttribute(
+        'placeholder',
+        'Select an instance type',
+      );
     });
+    expect(document.getElementById('edit-instance-type')).toHaveClass('pf-m-disabled');
   });
 
   it('keeps Save disabled until the selection changes', async () => {
