@@ -27,7 +27,6 @@ const renderSelect = ({
   filterItems,
   formatOptionLabel,
   initialValue = emptyResourceSelectValue(),
-  isTypeahead = false,
   tenants = [makeTenant('only-1', 'Only tenant')],
   transportOverrides,
 }: {
@@ -35,7 +34,6 @@ const renderSelect = ({
   filterItems?: (item: { id: string; metadata?: { name?: string } }) => boolean;
   formatOptionLabel?: (item: { id: string; metadata?: { name?: string } }) => string;
   initialValue?: ResourceSelectValue;
-  isTypeahead?: boolean;
   tenants?: Tenant[];
   transportOverrides?: MockTransportOverrides;
 } = {}) => {
@@ -62,7 +60,6 @@ const renderSelect = ({
             autoSelectSingleOption={autoSelectSingleOption}
             filterItems={filterItems}
             formatOptionLabel={formatOptionLabel}
-            isTypeahead={isTypeahead}
             placeholder="Select a tenant"
             loadErrorTitle="Failed to fetch tenants"
             emptyTitle="No registered tenants"
@@ -99,7 +96,7 @@ describe('ResourceSelectField', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/^Tenant/)).toHaveTextContent('Select a tenant');
+      expect(screen.getByPlaceholderText('Select a tenant')).toBeInTheDocument();
     });
     expect(screen.getByLabelText('formik-value')).toHaveTextContent('{"id":"","name":""}');
   });
@@ -120,7 +117,7 @@ describe('ResourceSelectField', () => {
         '{"id":"t-2","name":"globex"}',
       );
     });
-    expect(screen.getByLabelText(/^Tenant/)).toHaveTextContent('globex');
+    expect(screen.getByRole('combobox')).toHaveValue('globex');
   });
 
   it('auto-selects a single listed resource as id and name', async () => {
@@ -132,7 +129,9 @@ describe('ResourceSelectField', () => {
       );
     });
 
-    expect(screen.getByLabelText(/^Tenant/)).toHaveTextContent('Only tenant');
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).toHaveValue('Only tenant');
+    });
   });
 
   it('does not auto-select when multiple resources are listed', async () => {
@@ -142,7 +141,7 @@ describe('ResourceSelectField', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/^Tenant/)).toHaveTextContent('Select a tenant');
+      expect(screen.getByPlaceholderText('Select a tenant')).toBeInTheDocument();
     });
     expect(screen.getByLabelText('formik-value')).toHaveTextContent('{"id":"","name":""}');
   });
@@ -183,7 +182,7 @@ describe('ResourceSelectField', () => {
     expect(
       screen.getByText('Register a tenant before creating and assigning an external IP pool.'),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText(/^Tenant/)).toBeDisabled();
+    expect(document.getElementById('tenant')).toHaveClass('pf-m-disabled');
   });
 
   it('shows a load error above a disabled select when listing fails', async () => {
@@ -198,7 +197,7 @@ describe('ResourceSelectField', () => {
     expect(await screen.findByText('Failed to fetch tenants')).toBeInTheDocument();
     expect(screen.getByText('tenants unavailable')).toBeInTheDocument();
     expect(screen.queryByText('No registered tenants')).not.toBeInTheDocument();
-    expect(screen.getByLabelText(/^Tenant/)).toBeDisabled();
+    expect(document.getElementById('tenant')).toHaveClass('pf-m-disabled');
   });
 
   it('hides options that fail filterItems', async () => {
@@ -233,13 +232,12 @@ describe('ResourceSelectField', () => {
         '{"id":"t-2","name":"globex"}',
       );
     });
-    expect(screen.getByLabelText(/^Tenant/)).toHaveTextContent('globex (custom)');
+    expect(screen.getByRole('combobox')).toHaveValue('globex (custom)');
   });
 
   it('keeps distinct ids for the typeahead select and toggle', async () => {
     const { user } = renderSelect({
       tenants: [makeTenant('t-1', 'acme'), makeTenant('t-2', 'globex')],
-      isTypeahead: true,
     });
 
     await waitFor(() => {
@@ -252,10 +250,9 @@ describe('ResourceSelectField', () => {
     expect(document.getElementById('tenant')).not.toBe(document.getElementById('tenant-select'));
   });
 
-  it('filters options by typeahead input when isTypeahead is true', async () => {
+  it('filters options by typeahead input', async () => {
     const { user } = renderSelect({
       tenants: [makeTenant('t-1', 'acme'), makeTenant('t-2', 'globex')],
-      isTypeahead: true,
     });
 
     await waitFor(() => {

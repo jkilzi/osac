@@ -1,14 +1,5 @@
-import { type MouseEvent, type ReactNode, type Ref, useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  Content,
-  FormGroup,
-  MenuToggle,
-  type MenuToggleElement,
-  Select,
-  SelectList,
-  SelectOption,
-} from '@patternfly/react-core';
+import { type ReactNode, useEffect, useMemo } from 'react';
+import { Alert, Content, FormGroup } from '@patternfly/react-core';
 import { TypeaheadSelect } from '@patternfly/react-templates';
 import { useField } from 'formik';
 
@@ -52,8 +43,6 @@ export interface ResourceSelectFieldProps {
   filterItems?: (item: ResourceListItem) => boolean;
   /** Label for options and the closed toggle. Defaults to metadata.name. */
   formatOptionLabel?: (item: ResourceListItem) => string;
-  /** When true, use a typeahead select (filterable options). */
-  isTypeahead?: boolean;
 }
 
 const resourceFromItem = (item: ResourceListItem): ResourceSelectValue => ({
@@ -81,10 +70,8 @@ export const ResourceSelectField = ({
   onSelectResource,
   filterItems,
   formatOptionLabel = defaultOptionLabel,
-  isTypeahead = false,
 }: ResourceSelectFieldProps) => {
   const [field, meta, helpers] = useField<ResourceSelectValue>(name);
-  const [isOpen, setIsOpen] = useState(false);
   const showValidationErrors = useShowFieldValidationErrors();
   const error = getVisibleFieldError(meta, showValidationErrors);
   const { data, isLoading, error: loadError } = useListResource(service, request);
@@ -100,10 +87,6 @@ export const ResourceSelectField = ({
   const controlDisabled = isDisabled || isLoading || listFailed || listEmpty;
   const effectivePlaceholder = isLoading ? loadingPlaceholder : placeholder;
   const selectedId = field.value?.id ?? '';
-  const selectedItem = items.find((item) => item.id === selectedId);
-  const toggleLabel = selectedItem
-    ? formatOptionLabel(selectedItem)
-    : field.value?.name || effectivePlaceholder;
   const validated = error ? 'error' : 'default';
 
   const typeaheadOptions = useMemo(
@@ -136,32 +119,6 @@ export const ResourceSelectField = ({
     onSelectResource?.(resourceValue);
   };
 
-  const onSelect = (_event: MouseEvent<Element> | undefined, value: string | number) => {
-    const item = items.find((resource) => resource.id === value);
-    if (!item) {
-      return;
-    }
-    applySelection(item);
-    setIsOpen(false);
-  };
-
-  const toggle = (toggleRef: Ref<MenuToggleElement>) => (
-    <MenuToggle
-      ref={toggleRef}
-      id={fieldId}
-      onClick={() => setIsOpen((wasOpen) => !wasOpen)}
-      isExpanded={isOpen}
-      isDisabled={controlDisabled}
-      isFullWidth
-      status={validated === 'error' ? 'danger' : undefined}
-      aria-invalid={error ? true : undefined}
-      aria-describedby={error ? `${fieldId}-helper-error` : undefined}
-      aria-busy={isLoading || undefined}
-    >
-      {toggleLabel}
-    </MenuToggle>
-  );
-
   return (
     <>
       {listFailed ? (
@@ -175,51 +132,32 @@ export const ResourceSelectField = ({
         </Alert>
       ) : null}
       <FormGroup label={label} fieldId={fieldId} isRequired={isRequired} labelInfo={labelInfo}>
-        {isTypeahead ? (
-          <TypeaheadSelect
-            id={`${fieldId}-select`}
-            initialOptions={typeaheadOptions}
-            isDisabled={controlDisabled}
-            placeholder={effectivePlaceholder}
-            onSelect={(_event, value) => {
-              const item = items.find((resource) => resource.id === value);
-              if (!item) {
-                return;
-              }
-              applySelection(item);
-            }}
-            onClearSelection={() => {
-              void helpers.setValue({ id: '', name: '' }, true);
-            }}
-            toggleProps={{
-              id: fieldId,
-              'aria-label': label,
-              isFullWidth: true,
-              status: validated === 'error' ? 'danger' : undefined,
-              'aria-invalid': error ? true : undefined,
-              'aria-describedby': error ? `${fieldId}-helper-error` : undefined,
-              'aria-busy': isLoading || undefined,
-            }}
-          />
-        ) : (
-          <Select
-            id={`${fieldId}-select`}
-            isOpen={isOpen}
-            selected={selectedId}
-            onSelect={onSelect}
-            onOpenChange={setIsOpen}
-            toggle={toggle}
-            shouldFocusToggleOnSelect
-          >
-            <SelectList>
-              {items.map((item) => (
-                <SelectOption key={item.id} value={item.id}>
-                  {formatOptionLabel(item)}
-                </SelectOption>
-              ))}
-            </SelectList>
-          </Select>
-        )}
+        <TypeaheadSelect
+          id={`${fieldId}-select`}
+          initialOptions={typeaheadOptions}
+          isDisabled={controlDisabled}
+          placeholder={effectivePlaceholder}
+          onSelect={(_event, value) => {
+            const item = items.find((resource) => resource.id === value);
+            if (!item) {
+              return;
+            }
+            applySelection(item);
+          }}
+          onClearSelection={() => {
+            void helpers.setValue({ id: '', name: '' }, true);
+          }}
+          toggleProps={{
+            id: fieldId,
+            'aria-label': label,
+            isDisabled: controlDisabled,
+            isFullWidth: true,
+            status: validated === 'error' ? 'danger' : undefined,
+            'aria-invalid': error ? true : undefined,
+            'aria-describedby': error ? `${fieldId}-helper-error` : undefined,
+            'aria-busy': isLoading || undefined,
+          }}
+        />
         <FormFieldHelper error={error} fieldId={fieldId} />
       </FormGroup>
     </>

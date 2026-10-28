@@ -25,7 +25,6 @@ import { formatBootDiskSizeForReview } from '../../ProvisioningWizard/reviewForm
 
 interface Props {
   vm: ComputeInstance;
-  onInstanceTypeSaved?: () => void;
 }
 
 const canEditInstanceType = (vm: ComputeInstance): boolean => {
@@ -44,7 +43,7 @@ const disabledInstanceTypeTooltip = (vm: ComputeInstance, t: TFunction): string 
         'The instance type can be changed when the virtual machine is running, paused, or stopped.',
       );
 
-const VmDetailsCard = ({ vm, onInstanceTypeSaved }: Props) => {
+const VmDetailsCard = ({ vm }: Props) => {
   const { t } = useTranslation();
   const [editOpen, setEditOpen] = useState(false);
   const catalogItem = vm.spec?.catalogItem;
@@ -136,13 +135,7 @@ const VmDetailsCard = ({ vm, onInstanceTypeSaved }: Props) => {
           </DescriptionListGroup>
         </DescriptionList>
       </CardBody>
-      {editOpen ? (
-        <EditInstanceTypeModal
-          vm={vm}
-          onClose={() => setEditOpen(false)}
-          onSaved={onInstanceTypeSaved}
-        />
-      ) : null}
+      {editOpen ? <EditInstanceTypeModal vm={vm} onClose={() => setEditOpen(false)} /> : null}
     </Card>
   );
 };

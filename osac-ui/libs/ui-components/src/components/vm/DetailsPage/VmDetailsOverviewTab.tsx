@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import {
   Card,
   CardBody,
@@ -17,7 +16,6 @@ import VmUserDataCard from './VmUserDataCard';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { ResourceConditionsTable } from '../../Resource/ResourceConditionsTable';
 import RestartRequiredBanner, { hasRestartRequiredCondition } from '../RestartRequiredBanner';
-import { useRestartRequiredWatch } from '../useRestartRequiredWatch';
 
 interface Props {
   vm: ComputeInstance;
@@ -27,19 +25,6 @@ const VmDetailsOverviewTab = ({ vm }: Props) => {
   const { t } = useTranslation();
   const conditions = vm.status?.conditions ?? [];
   const restartRequired = hasRestartRequiredCondition(vm);
-  const [watchForRestart, setWatchForRestart] = useState(false);
-
-  useRestartRequiredWatch({
-    vmId: vm.id,
-    enabled: watchForRestart && !restartRequired,
-    onFinished: () => setWatchForRestart(false),
-  });
-
-  useEffect(() => {
-    if (restartRequired) {
-      setWatchForRestart(false);
-    }
-  }, [restartRequired]);
 
   return (
     <Stack hasGutter>
@@ -51,7 +36,7 @@ const VmDetailsOverviewTab = ({ vm }: Props) => {
       <StackItem>
         <Grid hasGutter>
           <GridItem md={6}>
-            <VmDetailsCard vm={vm} onInstanceTypeSaved={() => setWatchForRestart(true)} />
+            <VmDetailsCard vm={vm} />
           </GridItem>
           <GridItem md={6}>
             <Card isFullHeight>

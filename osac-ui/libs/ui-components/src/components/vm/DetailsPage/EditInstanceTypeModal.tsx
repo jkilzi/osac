@@ -37,7 +37,6 @@ import { formatInstanceTypeOptionLabel } from '../utils';
 interface EditInstanceTypeModalProps {
   vm: ComputeInstance;
   onClose: () => void;
-  onSaved?: () => void;
 }
 
 interface FormValues {
@@ -56,7 +55,7 @@ const validationSchema = (t: TFunction) =>
     }),
   });
 
-const EditInstanceTypeModal = ({ vm, onClose, onSaved }: EditInstanceTypeModalProps) => {
+const EditInstanceTypeModal = ({ vm, onClose }: EditInstanceTypeModalProps) => {
   const { t } = useTranslation();
   const { updateInstanceType } = useUpdateVmInstanceType();
   const {
@@ -110,7 +109,6 @@ const EditInstanceTypeModal = ({ vm, onClose, onSaved }: EditInstanceTypeModalPr
             values.instanceType.id,
             values.instanceType.name || values.instanceType.id,
           );
-          onSaved?.();
           onClose();
         } catch (error) {
           setSubmitError(error);
@@ -158,7 +156,6 @@ const EditInstanceTypeModal = ({ vm, onClose, onSaved }: EditInstanceTypeModalPr
                   service={InstanceTypes}
                   request={{ filter: listFilter }}
                   isRequired
-                  isTypeahead
                   isDisabled={currentTypeStatus !== 'ready'}
                   filterItems={(item: ResourceListItem) => {
                     if (currentTypeStatus !== 'ready' || !currentType) {
